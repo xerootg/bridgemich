@@ -1,8 +1,27 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     kotlin("plugin.serialization") version "2.3.10"
 }
+
+// One stable release key for every build, so an installed copy can always
+// be updated in place. CI passes it through env vars (decoded from the
+// repo secrets); a local build reads keystore.properties at the repo root
+// (gitignored; storeFile, storePassword, keyAlias, keyPassword). Without
+// either, debug builds fall back to the per-machine debug key, which is
+// what made earlier installs impossible to update.
+val keystoreProps = Properties().apply {
+    val f = rootProject.file("keystore.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}
+fun signingValue(env: String, prop: String): String? =
+    System.getenv(env) ?: keystoreProps.getProperty(prop)
+val releaseStoreFile = System.getenv("KEYSTORE_PATH")?.let { file(it) }
+    ?: keystoreProps.getProperty("storeFile")?.let { rootProject.file(it) }
+val hasReleaseKey = releaseStoreFile?.exists() == true &&
+    signingValue("KEYSTORE_PASSWORD", "storePassword") != null
 
 android {
     namespace = "tech.tarakoshka.bridgemich"
@@ -19,22 +38,29 @@ android {
     }
 
     signingConfigs {
-        create("release") {
-            storeFile = file("release.jks")
-            storePassword = System.getenv("KEYSTORE_PASSWORD")
-            keyAlias = System.getenv("KEY_ALIAS")
-            keyPassword = System.getenv("KEY_PASSWORD")
+        if (hasReleaseKey) {
+            create("release") {
+                storeFile = releaseStoreFile
+                storePassword = signingValue("KEYSTORE_PASSWORD", "storePassword")
+                keyAlias = signingValue("KEY_ALIAS", "keyAlias")
+                keyPassword = signingValue("KEY_PASSWORD", "keyPassword")
+            }
         }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = true
-            signingConfig = signingConfigs.getByName("release")
+            if (hasReleaseKey) signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+        debug {
+            // Same key as release when available, so debug and release builds
+            // can replace each other on a device.
+            if (hasReleaseKey) signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {
