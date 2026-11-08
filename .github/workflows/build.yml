@@ -35,8 +35,12 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+      # ubuntu-latest ships an Android SDK with ANDROID_HOME set and licenses
+      # accepted; AGP fetches the platform/build-tools it needs.
+      # (android-actions/setup-android@v3 fails: it installs the removed
+      # 'tools' package.)
+      - name: Show Android SDK
+        run: echo "ANDROID_HOME=$ANDROID_HOME"; ls "$ANDROID_HOME/build-tools"
 
       - name: Decode Keystore
         if: github.event_name != 'pull_request'
