@@ -35,6 +35,11 @@ class ImmichRepository {
             try {
                 val response = client.post("$baseUrl/api/search/metadata") {
                     header("Authorization", "Bearer $token")
+                    // The endpoint requires a JSON body (all fields optional).
+                    // Send {} explicitly rather than relying on the server to
+                    // treat a missing body as empty.
+                    contentType(ContentType.Application.Json)
+                    setBody(emptyMap<String, String>())
                 }.body<ImmichSearchResponse>()
 
                 response.assets?.items?.mapNotNull { asset ->

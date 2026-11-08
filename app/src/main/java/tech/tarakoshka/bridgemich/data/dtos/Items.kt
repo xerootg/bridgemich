@@ -2,6 +2,7 @@ package tech.tarakoshka.bridgemich.data.dtos
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerialName
+import kotlinx.serialization.json.JsonElement
 
 @Serializable
 data class Items(
@@ -26,7 +27,7 @@ data class Items(
     @SerialName("visibility") var visibility: String? = null,
     @SerialName("duration") var duration: String? = null,
     @SerialName("livePhotoVideoId") var livePhotoVideoId: String? = null,
-    @SerialName("people") var people: ArrayList<String> = arrayListOf(),
+    @SerialName("people") var people: List<JsonElement> = emptyList(),
     @SerialName("checksum") var checksum: String? = null,
     @SerialName("isOffline") var isOffline: Boolean? = null,
     @SerialName("hasMetadata") var hasMetadata: Boolean? = null,
