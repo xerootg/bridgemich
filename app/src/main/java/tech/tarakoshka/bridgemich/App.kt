@@ -26,7 +26,17 @@ class App : Application() {
                     requestTimeoutMillis = 15_000
                 }
                 install(ContentNegotiation) {
-                    json()
+                    // Ignore fields the DTOs don't model. Immich v3 added
+                    // fields to its responses (e.g. assets.nextCursor on
+                    // search, always present), and ktor's default Json fails
+                    // the whole decode on any unknown key, which left the
+                    // picker empty. isLenient keeps the old tolerance for
+                    // number-vs-string (v3 sends duration as a number).
+                    json(Json {
+                        ignoreUnknownKeys = true
+                        isLenient = true
+                        coerceInputValues = true
+                    })
                 }
                 expectSuccess = true
             }
